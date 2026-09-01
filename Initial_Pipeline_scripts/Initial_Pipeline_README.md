@@ -28,6 +28,7 @@ mibo8110-applied-omics-projects/
 Phased Pipeline DevelopmentThis project incorporates progressive module development to teach and implement robust HPC data management. Key features include:Robust Data Retrieval: Utilizes a two-step prefetch and fasterq-dump method to safely download SRA data and successfully bypass NCBI connection timeout issues.  Batch Processing: Reads dynamic SRA accessions at runtime from a specifically formatted srr_list.txt file.  Dynamic Storage Guards: Queries the HPC file system directly to determine remaining free space and halts the processing loop before storage drops below a safety threshold, preventing file corruption and disk exhaustion.  High-Performance Parallelization: Implements SLURM Job Arrays where each task processes an individual sample independently to maximize computational efficiency.  Separation of Aggregation: Runs MultiQC as a separate, post-array script to guarantee all independent tasks have completed successfully before generating a consolidate project report.
 
 Assembly & AMR Workflow Architecture
+Assembly & AMR Workflow Architecture
 The initial QC and preprocessing modules above lay the groundwork for the downstream end-to-end genomic analysis visualized below:
 
 flowchart TD
@@ -35,29 +36,7 @@ flowchart TD
     Input[srr_list.txt] --> Phase1
 
     %% Phase 1
-    subgraph Phase1 [Phase 1: Environment & DB Setup]
-        P1_1[Create Scratch Workspace Directories]
-        P1_2[Update AMRFinder Database]
-    end
 
-    Phase1 --> Phase2
-
-    %% Phase 2
-    subgraph Phase2 [Phase 2: Per-Sample Loop]
-        direction TB
-        A[SRA-Toolkit<br/>Download] --> B[fastp<br/>QC & Trim]
-        B --> C[SPAdes<br/>De Novo Assembly]
-        C --> D[QUAST<br/>QA Metrics]
-        D --> E[AMRFinderPlus<br/>AMR Annotation]
-    end
-
-    Phase2 --> Phase3
-
-    %% Phase 3 & Outputs
-    subgraph Phase3 [Phase 3: Aggregation & Output]
-        Out1[ALL_SAMPLES_AMR_SUMMARY.tsv]
-        Out2[MultiQC Report]
-    end
 
     Out1 --> RScript[R Visualization & Analysis]
 
