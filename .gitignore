@@ -1,0 +1,88 @@
+# ==============================================================================
+# 1. RAW DATA & SEQUENCE FILES
+# ==============================================================================
+# Never commit raw reads or large sequence files
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.sam
+*.vcf
+raw_reads/
+trimmed_reads/
+
+# ==============================================================================
+# 2. HPC, SLURM, & SYSTEM LOGS
+# ==============================================================================
+# Ignore SLURM batch execution logs and crash reports
+*.out
+*.err
+master_microbiome_*.out
+master_microbiome_*.err
+master_amr_*.out
+master_amr_*.err
+logs/
+.snakemake/
+
+# OS-generated hidden files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==============================================================================
+# 3. BIOINFORMATICS DATABASES & CONTAINERS
+# ==============================================================================
+# Ignore massive downloaded databases (Kraken2, AMRFinder) and Singularity images
+kraken_db*/
+*.k2d
+*.kraken
+*.tar.gz
+*.sif
+
+# ==============================================================================
+# 4. INTERMEDIATE PIPELINE OUTPUTS
+# ==============================================================================
+# Ignore bulky intermediate files and raw assembly outputs
+kraken_output/
+bracken_output/
+spades_output/
+final_assemblies/
+quast_qc/
+amr_reports/
+*.fasta
+*.fa
+*.fna
+*.gff
+*.rds
+
+# ==============================================================================
+# 5. R & QUARTO ENVIRONMENT
+# ==============================================================================
+# Ignore R workspace and Quarto rendering caches
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*_cache/
+*_files/
+
+# ==============================================================================
+# 6. EXCEPTIONS (ALLOW-LIST)
+# ==============================================================================
+# Explicitly force Git to track these finalized, lightweight summary files 
+# even if they fall under an ignored directory or file type extension.
+
+!ALL_SAMPLES_MICROBIOME.tsv
+!ALL_SAMPLES_AMR_SUMMARY.tsv
+!final_assembly_report.html
+!final_microbiome_report.html
+!plots/
+!scripts/
+!*.sh
+!*.qmd
+!*.R
