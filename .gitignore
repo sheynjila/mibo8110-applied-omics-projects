@@ -86,3 +86,4 @@ amr_reports/
 !*.sh
 !*.qmd
 !*.R
+~$*.docx
