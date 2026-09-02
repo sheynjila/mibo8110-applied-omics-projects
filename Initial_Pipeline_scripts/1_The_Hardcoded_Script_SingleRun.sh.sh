@@ -1,15 +1,3 @@
-###############################################################################
-# SINGLE-SAMPLE WORKFLOW
-#
-# This version of the pipeline is designed for a single accession and
-# serves as a simple introductory example before moving to automated
-# batch processing workflows.
-#
-# You should create the script file using the specified filename
-# and follow the setup instructions provided in the course materials.
-###############################################################################
-
-
 #!/bin/bash
 #SBATCH --job-name=qc_single
 #SBATCH --partition=batch
@@ -18,6 +6,19 @@
 #SBATCH --mem=12G
 #SBATCH --time=02:00:00
 #SBATCH --output=%x_%j.out
+
+#####################################################################
+# SINGLE-SAMPLE WORKFLOW
+#
+# This version of the pipeline is designed for a single accession and
+# serves as a simple introductory example before moving to automated
+# batch processing workflows.
+#
+# You should create the script file using the specified filename
+# and follow the setup instructions provided in the course materials.
+#####################################################################
+
+# The remainder of the workflow begins here
 
 # ==============================================================================
 # The Hardcoded Script (Single Run)
@@ -63,3 +64,4 @@ multiqc qc_before/ -n multiqc_raw.html
 multiqc qc_after/ -n multiqc_trimmed.html
 
 echo "Done!"
+
