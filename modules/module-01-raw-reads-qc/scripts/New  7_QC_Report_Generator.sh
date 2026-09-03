@@ -1,4 +1,9 @@
 #!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8G
+#SBATCH --time=03:00:00
 ###############################################################################
 # 7_QC_Report_Generator.sh
 # Module 1 (Raw Sequencing Reads & QC) — Script 7 of 7
