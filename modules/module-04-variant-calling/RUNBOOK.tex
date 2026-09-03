@@ -1,0 +1,363 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+
+\section{Module 4 --- Variant Calling:
+Runbook}\label{module-4-variant-calling-runbook}
+
+This is an \textbf{operational} document --- step-by-step execution
+instructions, expected outputs, and troubleshooting. For the conceptual
+``why,'' see this module's \href{README.md}{\texttt{README.md}}. For the
+full curriculum context, see
+\href{../../docs/curriculum/modular_bioinformatics_curriculum.md}{\texttt{docs/curriculum/modular\_bioinformatics\_curriculum.md}}.
+
+\subsection{Prerequisites}\label{prerequisites}
+
+\begin{itemize}
+\tightlist
+\item
+  Slurm environment with \texttt{module\ load} access to
+  \texttt{SRA-Toolkit/3.2.0-gompi-2024a},
+  \texttt{fastp/0.23.4-GCC-13.2.0}, \texttt{BWA/0.7.18-GCC-13.3.0},
+  \texttt{SAMtools/1.21-GCC-13.3.0}, \texttt{BCFtools/1.21-GCC-13.3.0},
+  and \texttt{MultiQC/1.28-foss-2024a} --- used by Tier A
+  (\texttt{master\_snp\_pipeline.sh}).
+\item
+  \texttt{samtools} and \texttt{bcftools} on \texttt{PATH} (outside
+  Slurm too) for Tier B Scripts 1, 2, 3, 4, and 6 --- these are plain
+  shell scripts, not Slurm jobs, and are meant to be run interactively
+  against Tier A's output.
+\item
+  R with \texttt{vcfR}, \texttt{adegenet}, and \texttt{ape} installed
+  --- used by Tier A's \texttt{variant\_analysis.R} and Tier B Scripts 5
+  and 7.
+\item
+  Module 1 completed or reviewed --- this module assumes the same
+  ``validate/interpret before you trust it'' habit taught there, applied
+  one level up the pipeline (aligned reads and called variants instead
+  of raw reads).
+\end{itemize}
+
+\subsection{A real, verified data-provenance issue (read before running
+the smoke
+test)}\label{a-real-verified-data-provenance-issue-read-before-running-the-smoke-test}
+
+\texttt{master\_snp\_pipeline.sh}'s own built-in fallback
+\texttt{srr\_list.txt} (used only when no \texttt{srr\_list.txt} is
+staged) is \texttt{SRR11092056}/\texttt{SRR11092057}. Verified via NCBI
+eutils: \texttt{SRR11092056} is SARS-CoV-2 metagenomic RNA-seq (Wuhan
+Institute of Virology), not bacterial WGS, and cannot produce a
+meaningful alignment against this pipeline's Typhimurium LT2 reference.
+\textbf{Do not rely on the built-in fallback.} Use
+\texttt{smoke\_test\_prjna242847.sh}, which stages a real, verified
+3-isolate Typhimurium cohort (PRJNA242847) before invoking
+\texttt{master\_snp\_pipeline.sh}. See the README's data-provenance note
+for the full verification trail.
+
+\subsection{Execution order}\label{execution-order}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Step
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Command
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Expected result
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & \texttt{bash\ smoke\_test\_prjna242847.sh} (or
+\texttt{sbatch\ master\_snp\_pipeline.sh} with your own verified
+\texttt{srr\_list.txt}) &
+\texttt{variants/\textless{}SRR\textgreater{}\_raw.vcf},
+\texttt{variants/\textless{}SRR\textgreater{}\_filtered.vcf},
+\texttt{variants/merged\_cohort.vcf} \\
+2 &
+\texttt{bash\ 1\_Validate\_Alignment\_And\_VCF\_Inputs.sh\ {[}WORKDIR{]}}
+& Console PASS/FAIL/WARN report per sample; stops hard on a structural
+or name-mismatch failure \\
+3 &
+\texttt{bash\ 2\_Assess\_Mapping\_And\_Reference\_Bias.sh\ {[}WORKDIR{]}}
+& \texttt{mapping\_bias\_summary.tsv}; console table of \% mapped, \%
+properly paired, mean depth, \% zero-coverage per sample \\
+4 &
+\texttt{bash\ 3\_Design\_Defensible\_Variant\_Filter.sh\ {[}WORKDIR{]}}
+& \texttt{variants/\textless{}SRR\textgreater{}\_filtered\_v2.vcf},
+\texttt{variants/\textless{}SRR\textgreater{}\_strand\_biased\_sites.tsv};
+console naive-vs-v2 PASS-count comparison \\
+5 & \texttt{bash\ 4\_Check\_Ploidy\_Assumptions.sh\ {[}WORKDIR{]}} &
+\texttt{variants/\textless{}SRR\textgreater{}\_raw\_haploid.vcf};
+console before/after heterozygous-call count per sample \\
+6 & Re-merge the ploidy-corrected calls:
+\texttt{cd\ WORKDIR/variants\ \&\&\ for\ f\ in\ *\_raw\_haploid.vcf;\ do\ bcftools\ view\ -Oz\ -o\ \$\{f\%.vcf\}.vcf.gz\ \$f\ \&\&\ bcftools\ index\ -t\ \$\{f\%.vcf\}.vcf.gz;\ done\ \&\&\ bcftools\ merge\ *\_raw\_haploid.vcf.gz\ -Ov\ -o\ merged\_cohort\_haploid.vcf}
+& \texttt{variants/merged\_cohort\_haploid.vcf} --- the ploidy-correct
+cohort VCF \\
+7 &
+\texttt{Rscript\ 5\_Cohort\_VCF\_QC\_Summary.R\ WORKDIR/variants/merged\_cohort\_haploid.vcf}
+& \texttt{cohort\_vcf\_qc\_summary.tsv},
+\texttt{cohort\_vcf\_qc\_per\_sample.tsv}; console Ti/Tv and
+heterozygosity report \\
+8 & \texttt{bash\ 6\_Coverage\_Gaps\_And\_Limitations.sh\ {[}WORKDIR{]}}
+& \texttt{LIMITATIONS.md} \\
+9 & \texttt{cd\ WORKDIR/variants\ \&\&\ Rscript\ variant\_analysis.R}
+(Tier A, against \texttt{merged\_cohort\_haploid.vcf} --- see script
+header for the required \texttt{bcftools\ merge} setup if not reusing
+step 6's output) & \texttt{variant\_quality\_qc.pdf},
+\texttt{phylogenetic\_tree.pdf}, \texttt{outbreak\_clusters.tsv} (if any
+pair is within \texttt{SNP\_THRESHOLD}) \\
+10 & \texttt{Rscript\ 7\_Assemble\_Variant\_Report.R\ WORKDIR} &
+\texttt{VARIANT\_REPORT.md}, sections 1-7 auto-filled, section 8
+blank \\
+11 & Fill in Section 8 (interpretation) of \texttt{VARIANT\_REPORT.md}
+by hand & Completed portfolio artifact \\
+\end{longtable}
+}
+
+Step 6 is the one manual hand-off in this module: Script 4 corrects the
+\emph{calling} step but does not silently rewrite Tier A's cohort merge
+for you --- running Scripts 5-7 against the original
+\texttt{merged\_cohort.vcf} instead of the ploidy-corrected re-merge
+will produce numbers Script 5 itself will flag (non-zero heterozygosity
+against a haploid reference), not numbers that are silently wrong.
+
+\subsection{Expected outputs, by step}\label{expected-outputs-by-step}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Step 1 (Tier A):}
+  \texttt{alignment/\textless{}SRR\textgreater{}\_dedup.bam{[}.bai{]}},
+  \texttt{variants/\textless{}SRR\textgreater{}\_raw.vcf},
+  \texttt{variants/\textless{}SRR\textgreater{}\_filtered.vcf},
+  \texttt{variants/merged\_cohort.vcf},
+  \texttt{final\_multiqc\_report.html}.
+\item
+  \textbf{Step 2:} stdout only --- validation report.
+\item
+  \textbf{Step 3:} \texttt{mapping\_bias\_summary.tsv}.
+\item
+  \textbf{Step 4:}
+  \texttt{variants/\textless{}SRR\textgreater{}\_filtered\_v2.vcf},
+  \texttt{variants/\textless{}SRR\textgreater{}\_strand\_biased\_sites.tsv},
+  \texttt{variants/\textless{}SRR\textgreater{}\_raw\_metrics.tsv}.
+\item
+  \textbf{Step 5:}
+  \texttt{variants/\textless{}SRR\textgreater{}\_raw\_haploid.vcf}.
+\item
+  \textbf{Step 6:} \texttt{variants/merged\_cohort\_haploid.vcf}.
+\item
+  \textbf{Step 7:} \texttt{cohort\_vcf\_qc\_summary.tsv},
+  \texttt{cohort\_vcf\_qc\_per\_sample.tsv}.
+\item
+  \textbf{Step 8:} \texttt{LIMITATIONS.md}.
+\item
+  \textbf{Step 9 (Tier A):} \texttt{variant\_quality\_qc.pdf},
+  \texttt{phylogenetic\_tree.pdf}, \texttt{outbreak\_clusters.tsv}
+  (conditional).
+\item
+  \textbf{Step 10:} \texttt{VARIANT\_REPORT.md}.
+\end{itemize}
+
+\subsection{Troubleshooting}\label{troubleshooting}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Symptom
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Likely cause
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Fix
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{smoke\_test\_prjna242847.sh} fails at the
+\texttt{prefetch}/\texttt{fasterq-dump} step & SRA-Toolkit module not
+loaded, or a transient NCBI connectivity issue & Confirm
+\texttt{module\ load\ SRA-Toolkit/3.2.0-gompi-2024a} succeeded; retry
+--- \texttt{master\_snp\_pipeline.sh}'s per-sample loop is
+fault-tolerant and will skip a genuinely failed sample rather than abort
+the whole run \\
+Script 1 fails with
+\texttt{@RG\ SM:\ tag\ does\ not\ match\ filename-derived\ sample} & A
+BAM was renamed/copied after alignment without regenerating its read
+group, or two samples' outputs were cross-copied & Re-run alignment for
+that sample from \texttt{master\_snp\_pipeline.sh} rather than renaming
+files by hand --- the
+\texttt{-R\ "@RG\textbackslash{}tID:...\textbackslash{}tSM:..."} flag is
+what makes this checkable at all \\
+Script 2 flags most/all samples \texttt{LOW\_MAPPING\_RATE} & You are
+accidentally running this against the pipeline's own broken default
+accessions (SARS-CoV-2 RNA-seq vs.~a bacterial DNA reference) instead of
+a verified worked-example cohort & Confirm \texttt{srr\_list.txt}
+matches \texttt{smoke\_test\_prjna242847.sh}'s accessions or your own
+verified bacterial WGS list --- see the README's data-provenance note \\
+Script 3 reports 0 strand-biased sites for every sample & Either
+genuinely clean data, or too few candidate calls with \texttt{INFO/DP4}
+ALT depth \textgreater= 4 to evaluate (very shallow coverage) &
+Cross-check against Script 2's mean-depth column before treating ``0
+flagged'' as ``no strand bias present'' \\
+Script 4 reports 0 heterozygous calls under the diploid default & Does
+not confirm ploidy was handled correctly --- it means this particular
+run got lucky, not that the risk doesn't exist. The
+\texttt{*\_raw\_haploid.vcf} files are still the correct calls to build
+on & Always continue with the haploid-corrected files regardless of
+whether this run happened to show 0 het calls \\
+Script 5 reports non-zero heterozygosity & You ran it against Tier A's
+original \texttt{merged\_cohort.vcf} (diploid-default calls) instead of
+the ploidy-corrected re-merge from Step 6 & Re-merge
+\texttt{*\_raw\_haploid.vcf} per Step 6 and re-run Script 5 against that
+file \\
+Script 5 reports Ti/Tv \textless= 0.6 & Cohort's SNP calls skew toward
+random noise rather than real biological signal --- could be genuinely
+low-quality data, or evidence you are still running against the wrong
+(viral RNA-seq vs.~bacterial reference) dataset & Confirm the dataset
+first (see the mapping-rate check above); if the dataset is correct,
+treat this as a real quality warning, not something to filter past
+silently \\
+\texttt{variant\_analysis.R} (Tier A) errors on
+\texttt{read.vcfR("merged\_cohort.vcf")} & Working directory is not
+\texttt{WORKDIR/variants}, or the file wasn't regenerated after Step 6's
+re-merge & \texttt{cd} into \texttt{WORKDIR/variants} first; confirm the
+intended cohort VCF (original vs.~haploid-corrected) actually exists
+there under the name the script expects \\
+Script 7's \texttt{VARIANT\_REPORT.md} shows ``Not available'' for a
+section & The corresponding earlier script was not run, or was run in a
+different working directory than the one passed to Script 7 & Re-run the
+missing step with the same \texttt{WORKDIR} argument, then re-run Script
+7 \\
+Script 7's Section 8 is blank & Expected --- intentionally left for the
+analyst to complete by hand & Fill it in based on the actual
+mapping/coverage flags (Section 2), Ti/Tv (Section 5), and clustering
+results (Section 6) --- not the auto-generated prompt text \\
+\end{longtable}
+}
+
+\subsection{Completion checklist (portfolio
+artifact)}\label{completion-checklist-portfolio-artifact}
+
+The curriculum's Module 4 assessment asks for: \emph{``A filtered VCF +
+a QC summary + an explicit statement of the call set's limitations
+(coverage gaps, reference bias, filter thresholds used).''} Confirm each
+is present before considering the module complete:
+
+\begin{itemize}
+\tightlist
+\item[$\square$]
+  \textbf{Filtered VCF} ---
+  \texttt{\textless{}SRR\textgreater{}\_filtered\_v2.vcf} (Script 3) or,
+  better, the ploidy-corrected \texttt{merged\_cohort\_haploid.vcf}
+  (Step 6) is retained alongside the report, not just summarized.
+\item[$\square$]
+  \textbf{QC summary} --- Section 5 of \texttt{VARIANT\_REPORT.md}
+  reflects a real Script 5 run against your actual merged cohort VCF,
+  including the Ti/Tv value and per-sample heterozygosity, not a
+  placeholder.
+\item[$\square$]
+  \textbf{Coverage gaps / reference bias} --- Section 2 reflects a real
+  Script 2 run (per-sample mapping rate and \% zero-coverage), not a
+  placeholder.
+\item[$\square$]
+  \textbf{Filter thresholds used} --- Section 3 states the exact
+  per-sample thresholds Script 3 actually computed for this cohort, not
+  the naive fixed defaults alone.
+\item[$\square$]
+  \textbf{Ploidy status} --- Section 4 states plainly whether the
+  reported calls are diploid-default or ploidy-corrected (Script 4), and
+  Section 5's heterozygosity numbers are consistent with that answer.
+\item[$\square$]
+  \textbf{Interpretation} --- Section 8 is filled in by hand,
+  referencing the actual mapping/coverage, filter, ploidy, and Ti/Tv
+  findings above --- not left as the auto-generated prompt text.
+\end{itemize}
+
+\end{document}
