@@ -1,0 +1,175 @@
+cat << 'EOF' > TROUBLESHOOTING_REPORT.txt
+===============================================================================
+COMPREHENSIVE TROUBLESHOOTING RECORD (PRJNA229998 PIPELINE)
+===============================================================================
+This document tracks the evolution of the pipeline from its initial draft to 
+the fully fault-tolerant v6 release, detailing both the errors encountered 
+and the architectural defenses built to prevent common HPC failures.
+
+-------------------------------------------------------------------------------
+1. RESOLVED EXECUTION ERRORS (THE BREAK-FIX CYCLE)
+-------------------------------------------------------------------------------
+
+ISSUE 1: Syntax Corruption via Copy-Paste Artifacts
+* The Symptom: Slurm aborted early jobs (PRJNA229998_airway_pipeline-v1.sh 
+  and -v2.sh) with a "syntax error near unexpected token \vert{}\vert{}".
+* The Root Cause: The web interface continuously converted standard Bash 
+  double-pipe operators (||) into LaTeX mathematical formatting during 
+  clipboard transfers into the terminal.
+* The Fix: In PRJNA229998_airway_pipeline-v4.sh, the code was refactored 
+  to completely eliminate the || operator, replacing it with explicit, 
+  multi-line if/else statements that are inherently copy-paste-proof.
+
+ISSUE 2: Lmod Toolchain and Dependency Clashes
+* The Symptom: Slurm logs for PRJNA229998_airway_pipeline-v4.sh showed Lmod 
+  warnings about missing dependent modules, dropping GCC and zlib libraries.
+* The Root Cause: Loading all tools globally at the top of the script caused 
+  a dependency war. 'fastp' required the GCC 13 toolchain, but 'STAR' 
+  subsequently forced a downgrade to GCC 11, silently unhooking 'fastp' from 
+  its required C-libraries.
+* The Fix: Implemented Just-In-Time (JIT) module loading in 
+  PRJNA229998_airway_pipeline-v5.sh. The script now runs 'module purge' 
+  followed by a specific 'module load' immediately before invoking each tool.
+
+ISSUE 3: The Silent SIGPIPE Trap
+* The Symptom: In PRJNA229998_airway_pipeline-v5.sh, Job 30164 failed rapidly 
+  (Exit Code 1:0), abruptly ending the sample log immediately after a 
+  successful 'prefetch'.
+* The Root Cause: The command 'vdb-validate ... | tee -a "${LOG}" | grep -q 
+  "is consistent"' triggered a pipeline crash. 'grep -q' exits instantly 
+  upon finding a match, closing the data pipe. 'vdb-validate' then threw a 
+  SIGPIPE (Exit Code 141) into the closed pipe, which forcefully killed 
+  the subshell and the parent Slurm job.
+* The Fix: In the final PRJNA229998_airway_pipeline-v6.sh, the 'grep -q' 
+  trap was removed. The entire execution subshell was also wrapped directly 
+  inside an 'if' statement to ensure single-sample failures do not crash 
+  the entire batch.
+
+-------------------------------------------------------------------------------
+2. BUILT-IN PIPELINE DEFENSES (Present in v6)
+-------------------------------------------------------------------------------
+
+DEFENSE 1: Paired-End Synchronization Enforcement
+* The Threat: Aggressive trimming algorithms can occasionally drop single 
+  reads. Feeding desynchronized pairs into STAR causes fatal crashes.
+* The Fix: Engineered a custom 'check_pair' Bash function using 'awk' and 
+  'diff' to rigorously verify that Mate 1 and Mate 2 have identical line 
+  counts and matching sequence headers before alignment is permitted.
+
+DEFENSE 2: Dynamic Rsubread Fallback
+* The Threat: Many HPC environments lack the standalone C-binary for 
+  'featureCounts', which would stall the final quantification step.
+* The Fix: The pipeline dynamically writes a custom R script 
+  ('run_featurecounts.R') on the fly, injecting the list of successful BAM 
+  files and executing it via 'Rscript' using the 'Rsubread' library.
+
+DEFENSE 3: Idempotency and Caching
+* The Threat: A mid-pipeline failure normally requires re-running everything 
+  from scratch, wasting compute hours.
+* The Fix: Every major time-consuming step is wrapped in file-existence 
+  checks. The pipeline is strictly idempotent; it can be restarted infinitely 
+  and will instantly resume exactly where it left off.
+
+-------------------------------------------------------------------------------
+3. VERSION EVOLUTION SUMMARY
+-------------------------------------------------------------------------------
+* PRJNA229998_airway_pipeline-v1.sh: Initial draft; failed due to syntax.
+* PRJNA229998_airway_pipeline-v2.sh: Attempted inline 'sed' cleaning.
+* PRJNA229998_airway_pipeline-v3.sh: Cleaned brackets, still vulnerable.
+* PRJNA229998_airway_pipeline-v4.sh: Fully eliminated || operators.
+* PRJNA229998_airway_pipeline-v5.sh: Introduced JIT module loading.
+* PRJNA229998_airway_pipeline-v6.sh: Resolved SIGPIPE crash; final stable run.
+EOF
+
+
+
+==========================================================
+==========================================================
+==========================================================
+cat << 'EOF' > TROUBLESHOOTING_REPORT.txt
+===============================================================================
+COMPREHENSIVE TROUBLESHOOTING RECORD (PRJNA229998 PIPELINE)
+===============================================================================
+This document tracks the evolution of the pipeline from its initial draft to 
+the fully fault-tolerant v6 release, detailing both the errors encountered 
+and the architectural defenses built to prevent common HPC failures.
+
+-------------------------------------------------------------------------------
+1. RESOLVED EXECUTION ERRORS (THE BREAK-FIX CYCLE)
+-------------------------------------------------------------------------------
+
+ISSUE 1: Syntax Corruption via Copy-Paste Artifacts
+* The Symptom: Slurm aborted early jobs with a "syntax error near unexpected 
+  token \vert{}\vert{}".
+* The Root Cause: The web interface continuously converted standard Bash 
+  double-pipe operators (||) into LaTeX mathematical formatting during 
+  clipboard transfers.
+* The Fix: Refactored the code to completely eliminate the || operator, 
+  replacing it with explicit, multi-line if/else statements that are 
+  inherently copy-paste-proof.
+
+ISSUE 2: Lmod Toolchain and Dependency Clashes
+* The Symptom: Slurm logs showed Lmod warnings about missing dependent 
+  modules, specifically noting dropped GCC and zlib libraries.
+* The Root Cause: Loading all tools globally at the top of the script caused 
+  a dependency war. 'fastp' required the GCC 13 toolchain, but 'STAR' 
+  subsequently forced a downgrade to GCC 11, silently unhooking 'fastp' from 
+  its required C-libraries.
+* The Fix: Implemented Just-In-Time (JIT) module loading. The script now runs 
+  'module purge' followed by a specific 'module load' immediately before 
+  invoking each tool, isolating the runtime environments.
+
+ISSUE 3: The Silent SIGPIPE Trap
+* The Symptom: Job 30164 failed rapidly (Exit Code 1:0), abruptly ending the 
+  sample log immediately after a successful 'prefetch'.
+* The Root Cause: The command 'vdb-validate ... | tee -a "${LOG}" | grep -q 
+  "is consistent"' triggered a pipeline crash. 'grep -q' exits instantly 
+  upon finding a match, closing the data pipe. 'vdb-validate' then threw a 
+  SIGPIPE (Exit Code 141) into the closed pipe. Because 'set -o pipefail' 
+  and 'set -e' were active, this non-fatal broken pipe forcefully killed 
+  the subshell and the parent Slurm job.
+* The Fix: Removed the 'grep -q' trap, relying entirely on 'set -e' to catch 
+  native validation failures. Additionally, wrapped the entire execution 
+  subshell directly inside an 'if' statement to ensure that if one sample 
+  fails, the script logs the error and gracefully moves to the next sample 
+  instead of crashing the batch.
+
+-------------------------------------------------------------------------------
+2. BUILT-IN PIPELINE DEFENSES
+-------------------------------------------------------------------------------
+
+DEFENSE 1: Paired-End Synchronization Enforcement
+* The Threat: Aggressive trimming algorithms can occasionally drop single 
+  reads, creating "singletons." Feeding desynchronized pairs into STAR causes 
+  fatal alignment crashes.
+* The Fix: Engineered a custom 'check_pair' Bash function using 'awk' and 
+  'diff' to rigorously verify that Mate 1 and Mate 2 have identical line 
+  counts and matching sequence headers before alignment is permitted.
+
+DEFENSE 2: Dynamic Rsubread Fallback
+* The Threat: Many HPC environments lack the standalone C-binary for 
+  'featureCounts', which would stall the final quantification step.
+* The Fix: The pipeline dynamically writes a custom R script 
+  ('run_featurecounts.R') on the fly, injecting the list of successful BAM 
+  files and executing it via 'Rscript' using the widely supported 'Rsubread' 
+  library.
+
+DEFENSE 3: Idempotency and Caching
+* The Threat: A mid-pipeline failure normally requires re-running everything 
+  from scratch, wasting compute hours on previously successful steps.
+* The Fix: Every major time-consuming step (genome building, downloading) 
+  is wrapped in file-existence checks. The pipeline is strictly idempotent; 
+  it can be restarted infinitely and will instantly resume exactly where it 
+  left off.
+
+-------------------------------------------------------------------------------
+3. VERSION EVOLUTION SUMMARY
+-------------------------------------------------------------------------------
+* v1: Initial draft with baseline logic; failed due to syntax artifacts.
+* v2: Attempted inline 'sed' cleaning of syntax errors.
+* v3: Cleaned bracket logic, but still vulnerable to web-formatting artifacts.
+* v4: Fully eliminated || operators to permanently resolve syntax corruption.
+* v5: Introduced JIT module loading to resolve GCC toolchain clashes.
+* v6 (Final): Resolved SIGPIPE crash in 'vdb-validate' and fully secured 
+  the fault-tolerant subshell.
+EOF
