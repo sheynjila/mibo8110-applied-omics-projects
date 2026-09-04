@@ -20,6 +20,8 @@
 set -e
 set -o pipefail
 
+# V9 FIX 1: Purge stale modules before loading toolchains
+module purge
 module load SRA-Toolkit/3.0.3-gompi-2022a
 
 WORKDIR="/scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep"
@@ -38,7 +40,14 @@ if ! vdb-validate "sra_cache/${SRR}/${SRR}.sra" 2>&1 | tee -a "${LOG}" | grep -q
     exit 1
 fi
 
-fasterq-dump "sra_cache/${SRR}/${SRR}.sra" --split-files --outdir raw_reads --threads 4 2>&1 | tee -a "${LOG}"
+# V9 FIX 2: Replaced --split-files with --split-3
+fasterq-dump "sra_cache/${SRR}/${SRR}.sra" --split-3 --outdir raw_reads --threads 4 2>&1 | tee -a "${LOG}"
 
 md5sum "raw_reads/${SRR}_1.fastq" "raw_reads/${SRR}_2.fastq" > "checksums/${SRR}_raw.md5"
 echo "OK: ${SRR} fetched and verified. Checksums saved." | tee -a "${LOG}"
+
+
+#==================================================================================================
+#You can also watch the custom log file that the script generates in real-time to see the prefetch and extraction progress:
+        # tail -f /scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep/logs/SRR1039508_fetch.log
+        

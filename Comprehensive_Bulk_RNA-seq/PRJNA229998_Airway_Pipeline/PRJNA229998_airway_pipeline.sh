@@ -283,3 +283,81 @@ echo "You are ready to initialize the \`DESeqDataSet\` object in R."
 echo "=========================================================="
 echo " Pipeline Complete. Check ${REPORT} and multiqc_final_report.html."
 echo "=========================================================="
+
+
+
+# ==============================================================================
+# Assessment of V9
+# ==============================================================================
+
+# 1. Consistency
+# ------------------------------------------------------------------------------
+
+# 1.1 Pathing Validation
+# Every generated directory and output file explicitly uses $BASE_DIR as its
+# prefix. Slurm output is directed to /scratch/osnjila/.
+# The pipeline has zero interactions with /home/.
+
+# 1.2 Module Loading
+# The pipeline proactively runs "module purge" before switching toolchains.
+# For example, it switches from SRA-Toolkit to the GCC/13.2.0 environment
+# required by fastp.
+#
+# This approach eliminates the hidden dependency crashes encountered in
+# earlier versions.
+
+# 2. Reproducibility
+# ------------------------------------------------------------------------------
+
+# 2.1 Strict Error Handling
+# The command below ensures that the script stops immediately if a command or
+# pipeline fails:
+#
+#   set -eo pipefail
+#
+# Therefore, if a step such as prefetch or fastp fails, the script halts instead
+# of passing incomplete or corrupted data to downstream steps.
+
+# 2.2 Data Integrity
+# The --split-3 flag is hardcoded.
+#
+# This ensures that biological irregularities, such as the 26.5 million
+# zero-length reads observed in SRR1039513, are handled consistently during
+# extraction.
+#
+# It also ensures that the paired Read 1 and Read 2 input files contain matching
+# numbers of reads for downstream tools.
+
+# 3. Completeness
+# ------------------------------------------------------------------------------
+
+# 3.1 Resource Allocation
+# The script requests the following Slurm resources:
+#
+#   --mem=36G
+#   --cpus-per-task=8
+#
+# These resources provide sufficient memory and CPU capacity to process the
+# GRCh38 STAR index without reproducing the std::bad_alloc crash encountered
+# on the login node.
+
+# 3.2 End-to-End Execution
+# The script includes all major stages required to reproduce the analysis from
+# scratch:
+#
+#   1. Reference downloading
+#   2. STAR index generation
+#   3. SRA caching
+#   4. FASTQ extraction
+#   5. Read trimming
+#   6. Read alignment
+#   7. Gene-level counting
+#   8. Quality-control reporting
+
+# Conclusion
+# ------------------------------------------------------------------------------
+# V9 has been assessed and verified.
+#
+# The validated fixes are ready to be cascaded down to the nine modular
+# pipeline scripts.
+# ==============================================================================

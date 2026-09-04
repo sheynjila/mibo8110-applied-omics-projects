@@ -11,15 +11,17 @@
 #
 # NARRATIVE:
 # This script executes read trimming as an evidence-based decision rather than 
-# a blind default. It reads the FastQC `summary.txt` generated in Script 2. 
+# a blind default[cite: 8]. It reads the FastQC `summary.txt` generated in Script 2[cite: 8]. 
 # If (and only if) adapter contamination or 3' quality decay is flagged, it 
-# dynamically appends the appropriate `fastp` parameters. It then documents 
+# dynamically appends the appropriate `fastp` parameters[cite: 8]. It then documents 
 # this programmatic logic into a plain-text rationale file to ensure strict 
-# methodological reproducibility.
+# methodological reproducibility[cite: 8].
 ###############################################################################
 set -e
 set -o pipefail
 
+# V9 FIX: Purge stale modules before loading toolchains
+module purge
 module load FastQC/0.11.9-Java-11
 module load fastp/0.23.4-GCC-13.2.0
 

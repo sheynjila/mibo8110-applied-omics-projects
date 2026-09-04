@@ -3,23 +3,18 @@
 #SBATCH --partition=batch
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+# V9 FIX: Bumped memory to 36G for STAR
+#SBATCH --mem=36G
 #SBATCH --time=12:00:00
 
 ###############################################################################
-# 8_Automated_Pipeline_AllSamples.sh
-#
-# NARRATIVE:
-# This script is the production-grade culmination of the module. It orchestrates 
-# Steps 1-7 into a fault-tolerant batch loop operating on its own isolated 
-# directory (`_automated`). The `set -e` subshell architecture ensures that if 
-# one accession fails (e.g., download timeout or failed integrity check), the 
-# script gracefully logs the error, skips that sample, and continues processing 
-# the remainder of the cohort, finally quantifying all successful BAMs together.
+# 8_Automated_Pipeline_AllSamples.sh (V9 PATCHED)
 ###############################################################################
 set -e
 set -o pipefail
 
+# V9 FIX: Purge before loading the toolchain stack
+module purge
 module load SRA-Toolkit/3.0.3-gompi-2022a
 module load FastQC/0.11.9-Java-11
 module load fastp/0.23.4-GCC-13.2.0
@@ -56,7 +51,8 @@ for SRR in "${SRR_LIST[@]}"; do
         if [ ! -s "raw_reads/${SRR}_1.fastq" ]; then
             prefetch "${SRR}" --output-directory sra_cache >> "${LOG}" 2>&1
             vdb-validate "sra_cache/${SRR}/${SRR}.sra" 2>&1 | grep -q "is consistent"
-            fasterq-dump "sra_cache/${SRR}/${SRR}.sra" --split-files --outdir raw_reads --threads 8 >> "${LOG}" 2>&1
+            # V9 FIX: --split-3 applied here
+            fasterq-dump "sra_cache/${SRR}/${SRR}.sra" --split-3 --outdir raw_reads --threads 8 >> "${LOG}" 2>&1
         fi
         md5sum "raw_reads/${SRR}_1.fastq" "raw_reads/${SRR}_2.fastq" > "checksums/${SRR}_raw.md5"
         

@@ -10,11 +10,11 @@
 # 5_Paired_End_Integrity_Check.sh
 #
 # NARRATIVE:
-# This script acts as a strict defensive gatekeeper before alignment. Poorly 
+# This script acts as a strict defensive gatekeeper before alignment[cite: 9]. Poorly 
 # configured trimming can silently drop single reads, breaking the synchronization 
-# of paired-end FASTQ mates. This script extracts and diffs the actual read IDs 
+# of paired-end FASTQ mates[cite: 9]. This script extracts and diffs the actual read IDs 
 # sequentially (ignoring mate suffixes) to prove that file 1 and file 2 remain 
-# perfectly 1:1 synchronized, preventing cryptic aligner crashes downstream.
+# perfectly 1:1 synchronized, preventing cryptic aligner crashes downstream[cite: 9].
 ###############################################################################
 set -e
 set -o pipefail

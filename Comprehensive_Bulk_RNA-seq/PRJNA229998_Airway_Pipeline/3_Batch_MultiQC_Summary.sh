@@ -19,6 +19,8 @@
 set -e
 set -o pipefail
 
+# V9 FIX: Purge stale modules before loading toolchains
+module purge
 module load MultiQC/1.28-foss-2024a
 
 WORKDIR="/scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep"

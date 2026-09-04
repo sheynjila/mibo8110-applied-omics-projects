@@ -3,7 +3,8 @@
 #SBATCH --partition=batch
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+# V9 FIX 1: Upgraded RAM to 36G to prevent std::bad_alloc index crash
+#SBATCH --mem=36G
 #SBATCH --time=02:00:00
 
 ###############################################################################
@@ -19,6 +20,8 @@
 set -e
 set -o pipefail
 
+# V9 FIX 2: Purge stale modules before loading toolchains
+module purge
 module load STAR/2.7.10b-GCC-11.3.0
 
 WORKDIR="/scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep"
@@ -50,3 +53,21 @@ STAR --runThreadN 8 --genomeDir "${REFDIR}/star_index" \
      --readFilesIn "trimmed_reads/${SRR}_1_clean.fastq" "trimmed_reads/${SRR}_2_clean.fastq" \
      --outSAMtype BAM SortedByCoordinate \
      --outFileNamePrefix "alignments/${SRR}_"
+
+
+
+#=========================================================================================================
+# You can monitor Script 6 (qc06_align) in two complementary ways depending on whether you want high-level cluster status or detailed, real-time log output.
+#=========================================================================================================
+#Option 1: Check Job Queue Status
+#To see if Slurm is still running the job, check your user queue:  
+        # squeue -u $(whoami)
+
+#Option 2: Track Output Logs in Real Time: To watch STAR actively map reads, inspect the log files inside your working directory.
+#Slurm Standard Output:
+        # tail -f /scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep/slurm-*.out
+#STAR Progress Log:
+        # tail -f /scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep/alignments/SRR1039508_Log.progress.out
+# Option 3: Verify Final Output Files: When Script 6 completes successfully, verify that the coordinate-sorted BAM file has been generated in your alignments folder:
+        # ls -lh /scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep/alignments/
+

@@ -20,6 +20,8 @@
 set -e
 set -o pipefail
 
+# V9 FIX: Purge stale modules before loading toolchains
+module purge
 module load FastQC/0.11.9-Java-11
 
 WORKDIR="/scratch/$(whoami)/PRJNA229998_airway_pipeline_stepbystep"
