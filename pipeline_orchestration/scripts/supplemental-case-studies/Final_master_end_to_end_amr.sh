@@ -44,12 +44,16 @@
 #SBATCH --error=master_amr_%j.err
 
 # Enable strict error handling
+# ORCHESTRATION COPY -- see pipeline_orchestration/README.md. Differs from
+# the original module script only by RUN_TAG-suffixed WORKDIR and
+# PIPELINE_SCRIPT_DIR (so it reuses that module's load_modules.sh).
+
 set -e
 set -o pipefail
 
-SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/supplemental-case-studies/scripts}}"
-SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
-source "${SCRIPT_DIR}/load_modules.sh"
+RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
+export PIPELINE_SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../../modules/supplemental-case-studies/scripts" && pwd)}"
+source "${PIPELINE_SCRIPT_DIR}/load_modules.sh"
 
 # FIX #2: organism now configurable in one place.
 AMR_ORGANISM="${AMR_ORGANISM:-Salmonella}"
@@ -61,7 +65,7 @@ echo "=========================================================="
 # ==========================================
 # PHASE 1: DIRECTORY SETUP & AMR DB UPDATE
 # ==========================================
-WORKDIR="/scratch/$(whoami)/end_to_end_amr_pipeline"
+WORKDIR="/scratch/$(whoami)/end_to_end_amr_pipeline_${RUN_TAG}"
 mkdir -p ${WORKDIR}/{raw_reads,qc,trimmed_reads,spades_output,final_assemblies,quast_qc,amr_reports,logs}
 cd ${WORKDIR}
 

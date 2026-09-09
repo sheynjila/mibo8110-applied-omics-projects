@@ -29,12 +29,16 @@
 #      skipped, and a summary of any failed SRRs is printed at the end.
 # ==============================================================================
 
+# ORCHESTRATION COPY -- see pipeline_orchestration/README.md. Differs from
+# the original module script only by RUN_TAG-suffixed WORKDIR and
+# PIPELINE_SCRIPT_DIR (so it reuses that module's load_modules.sh).
+
 set -e
 set -o pipefail
 
-SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/supplemental-case-studies/scripts}}"
-SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
-source "${SCRIPT_DIR}/load_modules.sh"
+RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
+export PIPELINE_SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../../modules/supplemental-case-studies/scripts" && pwd)}"
+source "${PIPELINE_SCRIPT_DIR}/load_modules.sh"
 
 echo "=========================================================="
 echo " INITIATING SINGLE-END RNA-SEQ PIPELINE FOR PRJNA1425489 "
@@ -45,7 +49,7 @@ echo "=========================================================="
 # ==========================================
 # FIX #2: renamed with _SE suffix so this never shares a WORKDIR with the
 # paired-end PRJNA1425489_mtb_pipeline.sh.
-WORKDIR="/scratch/$(whoami)/PRJNA1425489_rnaseq_SE"
+WORKDIR="/scratch/$(whoami)/PRJNA1425489_rnaseq_SE_${RUN_TAG}"
 mkdir -p ${WORKDIR}/{ref,raw_reads,qc,trimmed_reads,alignment,counts,logs}
 cd ${WORKDIR}
 

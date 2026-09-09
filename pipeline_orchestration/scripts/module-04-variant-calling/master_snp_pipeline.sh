@@ -9,36 +9,30 @@
 #SBATCH --error=master_snp_%j.err
 
 # ==============================================================================
-# CORRECTED VERSION of master_snp_pipeline.sh
-# See pipeline_appraisal_2026-08-31.md for the full review. Fixes applied:
-#
-#   1. The multi-sample VCF merge (Phase 5) is now automated inside the
-#      script instead of being a manual copy-paste block in a trailing
-#      comment. Any *_filtered.vcf produced this run is indexed and merged
-#      into merged_cohort.vcf automatically.
-#   2. Reference FASTA download verifies non-empty output before treating a
-#      rerun as "already downloaded".
-#   3. The per-sample loop is fault-tolerant: a failed sample (download,
-#      alignment, or calling failure) is logged and skipped instead of
-#      aborting the whole run, and failed samples are excluded from the
-#      cohort merge.
+# ORCHESTRATION COPY of modules/module-04-variant-calling/scripts/master_snp_pipeline.sh
+# See pipeline_orchestration/README.md for what's different and why (short
+# version: RUN_TAG-suffixed WORKDIR so concurrent/repeated runs don't
+# collide, PIPELINE_SCRIPT_DIR so this copy reuses the original module's
+# load_modules.sh). Everything below this block is otherwise identical to
+# the original -- if you fix a bug in one, apply the same fix to the other.
 # ==============================================================================
 
 set -e
 set -o pipefail
 
-SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/module-04-variant-calling/scripts}}"
-SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
-source "${SCRIPT_DIR}/load_modules.sh"
+RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
+export PIPELINE_SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../../modules/module-04-variant-calling/scripts" && pwd)}"
+source "${PIPELINE_SCRIPT_DIR}/load_modules.sh"
 
 echo "=========================================================="
 echo " INITIATING MASTER BACTERIAL VARIANT CALLING PIPELINE "
+echo " RUN_TAG: ${RUN_TAG}"
 echo "=========================================================="
 
 # ==========================================
 # PHASE 1: DIRECTORY & ENVIRONMENT SETUP
 # ==========================================
-WORKDIR="/scratch/$(whoami)/master_snp_pipeline"
+WORKDIR="/scratch/$(whoami)/master_snp_pipeline_${RUN_TAG}"
 mkdir -p ${WORKDIR}/{ref,raw_reads,qc,trimmed_reads,alignment,variants,logs}
 cd ${WORKDIR}
 
@@ -57,7 +51,6 @@ cd ref
 FASTA_URL="https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/945/GCF_000006945.2_ASM694v2/GCF_000006945.2_ASM694v2_genomic.fna.gz"
 FASTA_FILE="genome.fna"
 
-# FIX #2: -s checks non-empty, so a truncated download gets re-fetched.
 if [ ! -s "${FASTA_FILE}" ]; then
     echo "Downloading reference FASTA..."
     wget -qO- ${FASTA_URL} | gunzip -c > ${FASTA_FILE}
@@ -88,7 +81,6 @@ cd ${WORKDIR}
 # ==========================================
 echo -e "\n[PHASE 3] EXECUTING WGS SAMPLE PROCESSING LOOP..."
 
-# FIX #3: track failures instead of a hard abort on the first bad sample.
 FAILED_SAMPLES=()
 
 for SRR in $(cat srr_list.txt); do
@@ -101,14 +93,12 @@ for SRR in $(cat srr_list.txt); do
         set -e
         set -o pipefail
 
-        # Step A: Download (Two-step Prefetch Fix)
         echo ">> Downloading from SRA..."
         module purge
         load_sra_toolkit || exit 1
         prefetch ${SRR} -O raw_reads/
         fasterq-dump raw_reads/${SRR} --split-files --outdir raw_reads --threads 4
 
-        # Step B: Quality Control & Trimming
         echo ">> Trimming with fastp..."
         module purge
         load_fastp || exit 1
@@ -116,7 +106,6 @@ for SRR in $(cat srr_list.txt); do
               -o trimmed_reads/${SRR}_1_clean.fastq -O trimmed_reads/${SRR}_2_clean.fastq \
               --thread 8 --html qc/${SRR}_fastp.html 2> qc/${SRR}_fastp.log
 
-        # Step C: BWA-MEM DNA Alignment & Direct Sorting
         echo ">> Aligning DNA reads to reference..."
         module purge
         load_bwa      || exit 1
@@ -127,7 +116,6 @@ for SRR in $(cat srr_list.txt); do
                 trimmed_reads/${SRR}_2_clean.fastq | \
         samtools sort -@ 4 -o alignment/${SRR}_unsorted.bam -
 
-        # Step D: Mark and Remove PCR/Optical Duplicates
         echo ">> Marking and filtering PCR duplicates with SAMtools..."
         samtools collate -@ 4 -O -u alignment/${SRR}_unsorted.bam | \
         samtools fixmate -@ 4 -m -u - - | \
@@ -135,9 +123,8 @@ for SRR in $(cat srr_list.txt); do
         samtools markdup -@ 4 -r - alignment/${SRR}_dedup.bam
 
         samtools index alignment/${SRR}_dedup.bam
-        rm alignment/${SRR}_unsorted.bam # Clean up intermediate file
+        rm alignment/${SRR}_unsorted.bam
 
-        # Step E: Variant Calling (Generating Raw VCF)
         echo ">> Calling variants (SNPs and INDELs)..."
         module purge
         load_bcftools || exit 1
@@ -145,7 +132,6 @@ for SRR in $(cat srr_list.txt); do
         bcftools mpileup -O b -f ref/${FASTA_FILE} alignment/${SRR}_dedup.bam | \
         bcftools call -mv -O v -o variants/${SRR}_raw.vcf
 
-        # Step F: Multi-Metric Robust Variant Filtering
         echo ">> Applying robust multi-metric filtering (QUAL >= 20, DP >= 10, MQ >= 30)..."
         bcftools filter -s LowQual -e 'QUAL<20 || DP<10 || MQ<30' variants/${SRR}_raw.vcf > variants/${SRR}_filtered.vcf
     )
@@ -166,12 +152,12 @@ done
 # ==========================================
 echo -e "\n[PHASE 4] COMPILING MULTIQC REPORT..."
 module purge
-load_python  || exit 1   # must be loaded before MultiQC -- see load_modules.sh
+load_python  || exit 1
 load_multiqc || exit 1
 multiqc qc/ -n final_multiqc_report.html
 
 # ==========================================
-# PHASE 5: MULTI-SAMPLE VCF MERGE (FIX #1 — now automated)
+# PHASE 5: MULTI-SAMPLE VCF MERGE
 # ==========================================
 echo -e "\n[PHASE 5] MERGING SAMPLE VCFs INTO A COHORT-LEVEL VCF..."
 cd variants
@@ -186,7 +172,6 @@ elif [ $(echo "${FILTERED_VCFS}" | wc -l) -eq 1 ]; then
     echo "Only one sample succeeded - copying its filtered VCF as the 'cohort' VCF (no merge needed)."
     cp ${FILTERED_VCFS} merged_cohort.vcf
 else
-    # bcftools merge needs bgzipped + tabix-indexed inputs
     for vcf in ${FILTERED_VCFS}; do
         bgzip -f -k ${vcf}
         bcftools index -t -f ${vcf}.gz
@@ -204,40 +189,7 @@ if [ ${#FAILED_SAMPLES[@]} -gt 0 ]; then
 else
     echo " PIPELINE SUCCESSFULLY COMPLETED! "
 fi
+echo " RUN_TAG: ${RUN_TAG}"
 echo " Filtered VCF files stored in: ${WORKDIR}/variants/"
 echo " Cohort VCF (if >=1 sample succeeded): ${WORKDIR}/variants/merged_cohort.vcf"
 echo "=========================================================="
-
-###############################################################################
-# COMPREHENSIVE EDUCATIONAL COMMENTARY & METHODOLOGY (carried over)
-#
-# 1. PCR Duplicate Removal (samtools markdup)
-# ---------------------------------------------------------------------------
-# During PCR amplification, identical DNA fragments can be over-represented.
-# If an amplification error occurs early in PCR, it can mimic a biological
-# mutation. Removing duplicate reads (-r flag in markdup) ensures that each
-# candidate variant is supported by independent biological fragments.
-#
-# 2. Robust Multi-Metric Variant Filtering
-# ---------------------------------------------------------------------------
-# This pipeline enforces three strict criteria:
-#   - QUAL < 20 : Removes low-confidence variant calls.
-#   - DP < 10   : Eliminates calls backed by fewer than 10 reads (low depth).
-#   - MQ < 30   : Excludes reads that map ambiguously to repetitive regions.
-#
-# 3. Read Group Metadata (-R flag in BWA-MEM)
-# ---------------------------------------------------------------------------
-# Adding explicit Read Group tags (@RG) embeds sample identity metadata
-# directly inside the BAM header — essential for multi-sample analysis,
-# IGV visualization, and workflow provenance.
-#
-# 4. Epidemiological Outbreak Tracing Application
-# ---------------------------------------------------------------------------
-# The merged cohort VCF records SNPs relative to the reference strain.
-# Downstream tools (e.g., snp-dists or IQ-TREE) can compare these SNP
-# profiles across isolates to construct phylogenetic trees. A shared SNP
-# count alone does not confirm an outbreak link — interpretation must also
-# consider reference selection, filtering criteria, missing data,
-# recombination, organism-specific thresholds, sampling context, and
-# epidemiological evidence.
-###############################################################################

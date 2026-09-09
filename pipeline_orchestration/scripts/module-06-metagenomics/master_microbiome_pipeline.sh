@@ -32,12 +32,16 @@
 #      this feature is fully backward-compatible and off by default.
 # ==============================================================================
 
+# ORCHESTRATION COPY -- see pipeline_orchestration/README.md. Differs from
+# the original module script only by RUN_TAG-suffixed WORKDIR and
+# PIPELINE_SCRIPT_DIR (so it reuses that module's load_modules.sh).
+
 set -e
 set -o pipefail
 
-SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/module-06-metagenomics/scripts}}"
-SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
-source "${SCRIPT_DIR}/load_modules.sh"
+RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
+export PIPELINE_SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../../modules/module-06-metagenomics/scripts" && pwd)}"
+source "${PIPELINE_SCRIPT_DIR}/load_modules.sh"
 
 # Path to a host reference genome FASTA (e.g. the plant or animal host of
 # your microbiome samples). Leave empty to skip host depletion entirely.
@@ -50,7 +54,7 @@ echo "=========================================================="
 # ==========================================
 # PHASE 1: DIRECTORY SETUP & DB CONFIG
 # ==========================================
-WORKDIR="/scratch/$(whoami)/master_microbiome_pipeline"
+WORKDIR="/scratch/$(whoami)/master_microbiome_pipeline_${RUN_TAG}"
 mkdir -p ${WORKDIR}/{raw_reads,trimmed_reads,host_depleted_reads,kraken_output,bracken_output,qc,logs}
 cd ${WORKDIR}
 

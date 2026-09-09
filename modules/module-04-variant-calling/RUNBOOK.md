@@ -12,10 +12,12 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 ## Prerequisites
 
-- Slurm environment with `module load` access to `SRA-Toolkit/3.2.0-gompi-2024a`,
-  `fastp/0.23.4-GCC-13.2.0`, `BWA/0.7.18-GCC-13.3.0`, `SAMtools/1.21-GCC-13.3.0`,
-  `BCFtools/1.21-GCC-13.3.0`, and `MultiQC/1.28-foss-2024a` — used by Tier A
-  (`master_snp_pipeline.sh`).
+- Slurm environment for Tier A (`master_snp_pipeline.sh`) — environment
+  modules (SRA-Toolkit, fastp, BWA, SAMtools, BCFtools, MultiQC) are loaded
+  automatically via [`scripts/load_modules.sh`](scripts/load_modules.sh);
+  see the root [`RUNBOOK.md`](../../RUNBOOK.md) §4 for how the
+  pinned-build / discover-by-name fallback works and how to override a
+  module name for your own cluster.
 - `samtools` and `bcftools` on `PATH` (outside Slurm too) for Tier B Scripts
   1, 2, 3, 4, and 6 — these are plain shell scripts, not Slurm jobs, and are
   meant to be run interactively against Tier A's output.

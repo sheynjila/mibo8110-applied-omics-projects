@@ -56,6 +56,10 @@
 set -e
 set -o pipefail
 
+SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/module-05-phylogenomics/scripts}}"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
+source "${SCRIPT_DIR}/load_modules.sh"
+
 ALIGNMENT="${1:-core_snp_alignment.fasta}"
 PREFIX="${2:-cohort_tree}"
 THREADS="${3:-8}"
@@ -73,7 +77,7 @@ if [ ! -s "${ALIGNMENT}" ]; then
 fi
 
 module purge
-module load IQ-TREE/2.3.6-gompi-2024a
+load_iqtree || exit 1
 
 iqtree2 -s "${ALIGNMENT}" \
         -m MFP+ASC \

@@ -39,12 +39,16 @@
 #      (`module spider STAR`) — the version below is a placeholder.
 # ==============================================================================
 
+# ORCHESTRATION COPY -- see pipeline_orchestration/README.md. Differs from
+# the original module script only by RUN_TAG-suffixed WORKDIR and
+# PIPELINE_SCRIPT_DIR (so it reuses that module's load_modules.sh).
+
 set -e
 set -o pipefail
 
-SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/module-07-single-cell-elective/scripts}}"
-SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
-source "${SCRIPT_DIR}/load_modules.sh"
+RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
+export PIPELINE_SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../../modules/module-07-single-cell-elective/scripts" && pwd)}"
+source "${PIPELINE_SCRIPT_DIR}/load_modules.sh"
 
 # ==========================================
 # CONFIGURATION
@@ -84,7 +88,7 @@ fi
 # ==========================================
 # PHASE 1: DIRECTORY SETUP
 # ==========================================
-WORKDIR="/scratch/$(whoami)/master_scrnaseq_pipeline"
+WORKDIR="/scratch/$(whoami)/master_scrnaseq_pipeline_${RUN_TAG}"
 mkdir -p ${WORKDIR}/{ref,raw_reads,qc,alignment,logs}
 cd ${WORKDIR}
 

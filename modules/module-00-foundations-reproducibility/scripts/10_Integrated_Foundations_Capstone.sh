@@ -33,11 +33,16 @@
 #   # a working srr_list.txt in the working directory (see module README)
 ###############################################################################
 
-module load SRA-Toolkit/3.0.3-gompi-2022a
-module load FastQC/0.11.9-Java-11
-module load fastp/0.23.4-GCC-13.2.0
-module load MultiQC/1.28-foss-2024a
-module load SAMtools/1.16.1-GCC-11.3.0
+SCRIPT_DIR="${PIPELINE_SCRIPT_DIR:-${SLURM_SUBMIT_DIR:+${SLURM_SUBMIT_DIR}/modules/module-00-foundations-reproducibility/scripts}}"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
+source "${SCRIPT_DIR}/load_modules.sh"
+
+module purge
+load_sra_toolkit || exit 1
+load_fastqc      || exit 1
+load_fastp       || exit 1
+load_multiqc     || exit 1
+load_samtools    || exit 1
 
 cd /scratch/$(whoami)
 mkdir -p capstone/module0/{raw_reads,qc_before,trimmed_reads,qc_after,fastp_reports,logs}
