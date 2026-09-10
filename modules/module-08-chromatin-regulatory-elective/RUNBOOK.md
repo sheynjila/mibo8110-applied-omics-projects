@@ -7,10 +7,12 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 ## Prerequisites
 
-- SRA-Toolkit 3.2.0 (`prefetch`, `fasterq-dump`), fastp 0.23.4, Bowtie2
-  2.5.4, SAMtools 1.18, MACS2 2.2.9.1, BEDTools 2.31.0, MultiQC 1.28 —
-  module versions as pinned in `master_chipseq_pipeline.sh`'s own
-  `module load` lines.
+- SRA-Toolkit, fastp, Bowtie2, SAMtools, MACS2, BEDTools, MultiQC — loaded
+  automatically via [`scripts/load_modules.sh`](scripts/load_modules.sh)
+  (pinned to SRA-Toolkit 3.2.0, fastp 0.23.4, Bowtie2 2.5.4, SAMtools 1.18,
+  MACS2 2.2.9.1, BEDTools 2.31.0, MultiQC 1.28, with an automatic fallback
+  if your cluster doesn't have those exact builds — see the root
+  [`RUNBOOK.md`](../../RUNBOOK.md) §4).
 - A GNU awk (`gawk`) providing 3-argument `match()` — used to build
   `ref/gene_features.bed` from the downloaded GTF. Most HPC systems' default
   `awk` is gawk; confirm with `awk --version` if the gene-features build

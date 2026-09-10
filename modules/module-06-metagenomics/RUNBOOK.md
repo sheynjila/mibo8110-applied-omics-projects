@@ -8,9 +8,11 @@ module's [`README.md`](README.md). For the full curriculum context, see
 ## Prerequisites
 
 **Shotgun route:**
-- SRA-Toolkit 3.2.0 (`prefetch`, `fasterq-dump`), fastp 0.23.4, Kraken2
-  2.1.2, Bracken 2.8, MultiQC 1.28 — module versions as pinned in
-  `master_microbiome_pipeline.sh`'s own `module load` lines.
+- SRA-Toolkit, fastp, Kraken2, Bracken, MultiQC — loaded automatically via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh) (pinned to
+  SRA-Toolkit 3.2.0, fastp 0.23.4, Kraken2 2.1.2, Bracken 2.8, MultiQC
+  1.28, with an automatic fallback if your cluster doesn't have those
+  exact builds — see the root [`RUNBOOK.md`](../../RUNBOOK.md) §4).
 - A pre-built Kraken2 database (>50GB) — path configured via `KRAKEN_DB`
   inside `master_microbiome_pipeline.sh`.
 - Bowtie2 2.5.4 and a host reference genome FASTA — only if `HOST_REFERENCE`
@@ -23,8 +25,9 @@ module's [`README.md`](README.md). For the full curriculum context, see
   required for the report itself).
 
 **Amplicon route:**
-- SRA-Toolkit 3.2.0, FastQC 0.11.9, cutadapt 4.9, MultiQC 1.28 — used by
-  `master_amplicon_pipeline.sh`.
+- SRA-Toolkit, FastQC, cutadapt, MultiQC — same
+  [`scripts/load_modules.sh`](scripts/load_modules.sh), pinned to
+  SRA-Toolkit 3.2.0, FastQC 0.11.9, cutadapt 4.9, MultiQC 1.28.
 - R with the `dada2` and `ggplot2` packages — used by
   `amplicon_dada2_analysis.R`.
 - A DADA2-formatted SILVA (16S) or UNITE (ITS) reference FASTA, downloaded

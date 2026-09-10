@@ -7,11 +7,20 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 ## Prerequisites
 
-- `spades.py` (tested with v3.15.5) on `PATH` for short-read assembly.
-- `flye` (tested with v2.9.6) on `PATH` for long-read assembly.
+- `spades.py` (tested with v3.15.5) and `flye` (tested with v2.9.6) —
+  scripts 2 and 3 load these automatically via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh). Unlike other
+  modules, this module's pinned versions were never verified against a
+  real cluster's module tree (the original scripts assumed these tools
+  were already on `PATH` with no `module load` at all) — run `module
+  spider SPAdes`/`module spider Flye` yourself and set
+  `SPADES_MODULE`/`FLYE_MODULE` if the pinned build isn't found.
 - `minimap2` and `samtools` on `PATH` — used by script 6's read-depth check
-  (script 6 degrades gracefully with a warning and skips the depth check if
-  either is missing; the GC-content check still runs).
+  (also available via `load_modules.sh`'s `load_minimap2`/`load_samtools`;
+  script 6 is plain Python and can't source `load_modules.sh` itself, so
+  load these in your shell **before** running script 6). Script 6 degrades
+  gracefully with a warning and skips the depth check if either is
+  missing; the GC-content check still runs.
 - Python 3 (no third-party packages required — scripts 4-7 use only the
   standard library, deliberately, so this module has no dependency chain
   beyond the assemblers themselves).

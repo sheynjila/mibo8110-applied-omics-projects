@@ -9,9 +9,12 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 - Access to an HPC cluster with Slurm (`sbatch` on `PATH`), or an equivalent
   environment.
-- Modules available: `SRA-Toolkit/3.0.3-gompi-2022a`,
-  `FastQC/0.11.9-Java-11`, `fastp/0.23.4-GCC-13.2.0`,
-  `MultiQC/1.28-foss-2024a`. Check with `module avail <name>`.
+- SRA-Toolkit, FastQC, fastp, and MultiQC — loaded automatically via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh) (pinned to
+  `SRA-Toolkit/3.0.3-gompi-2022a`, `FastQC/0.11.9-Java-11`,
+  `fastp/0.23.4-GCC-13.2.0`, `MultiQC/1.28-foss-2024a`, with an automatic
+  fallback if your cluster doesn't have those exact builds — see the root
+  [`RUNBOOK.md`](../../RUNBOOK.md) §4).
 - A scratch/working directory with at least ~15GB free (PRJNA1518998's two
   reference SRR runs are a few GB each; raw + trimmed FASTQ + QC reports for
   both roughly doubles that; leave headroom).

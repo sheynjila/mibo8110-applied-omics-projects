@@ -8,9 +8,12 @@
 #
 # See lib/module_loader.sh for the try-pinned / discover-by-name /
 # refuse-if-ambiguous fallback and how to override with e.g.
-# STAR_MODULE=<exact-name>. STAR has no pinned build in this course (the
-# original scripts already said "verify exact version with module spider
-# STAR") -- load_star() goes straight to discovery for that reason.
+# STAR_MODULE=<exact-name>. The original scripts never pinned an exact STAR
+# build (they said "verify exact version with module spider STAR") -- the
+# pin below is an unverified best guess, not a tested value like this
+# module's other tools; expect load_star() to fall back to discovery on
+# most clusters, and treat a pinned-build hit as a coincidence, not
+# confirmation this exact build was ever tested here.
 ###############################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

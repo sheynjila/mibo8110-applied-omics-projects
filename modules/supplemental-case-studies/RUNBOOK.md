@@ -7,9 +7,12 @@ outside the numbered modules, see this folder's [`README.md`](README.md).
 ## Prerequisites
 
 **AMR pipeline (`Final_master_end_to_end_amr.sh`):**
-- SRA-Toolkit 3.2.0, fastp 0.23.4, SPAdes 3.15.5, QUAST 5.2.0,
-  ncbi-amrfinderplus 3.11.11, MultiQC 1.28 — module versions as pinned in
-  the script's own `module load` lines.
+- SRA-Toolkit, fastp, SPAdes, QUAST, ncbi-amrfinderplus, MultiQC — loaded
+  automatically via [`scripts/load_modules.sh`](scripts/load_modules.sh)
+  (pinned to SRA-Toolkit 3.2.0, fastp 0.23.4, SPAdes 3.15.5, QUAST 5.2.0,
+  ncbi-amrfinderplus 3.11.11, MultiQC 1.28, with an automatic fallback if
+  your cluster doesn't have those exact builds — see the root
+  [`RUNBOOK.md`](../../RUNBOOK.md) §4).
 - A network-reachable AMRFinderPlus database — Phase 1 runs `amrfinder -u`
   to update it before scanning; this requires network access from the
   compute node, not just the login node, on some HPC systems.
@@ -18,8 +21,14 @@ outside the numbered modules, see this folder's [`README.md`](README.md).
   entire repository).
 
 **MTB pipeline (`PRJNA1425489_mtb_single_end.sh`):**
-- SRA-Toolkit 3.0.3, FastQC 0.11.9, fastp 0.23.4, HISAT2 2.2.1, SAMtools
-  1.18, Subread 2.0.6 (for `featureCounts`), MultiQC 1.28.
+- SRA-Toolkit, FastQC, fastp, HISAT2, SAMtools, Subread (for
+  `featureCounts`), MultiQC — same
+  [`scripts/load_modules.sh`](scripts/load_modules.sh), pinned to
+  SRA-Toolkit 3.0.3 for this script specifically (note: the AMR pipeline
+  above pins 3.2.0 — `load_sra_toolkit` takes the version as an argument
+  precisely because these two scripts were authored against different
+  builds), FastQC 0.11.9, fastp 0.23.4, HISAT2 2.2.1, SAMtools 1.18,
+  Subread 2.0.6, MultiQC 1.28.
 - No external database — the *M. tuberculosis* H37Rv reference
   (GCF_000195955.2, ASM19595v2) is downloaded directly from NCBI by Phase 2.
 

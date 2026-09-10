@@ -30,7 +30,7 @@ _M3_LIB_DIR="${_M3_LIB_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 source "${_M3_LIB_DIR}/../../../lib/module_loader.sh"
 
 load_spades()   { load_module_capability spades   "SPAdes/3.15.5-GCC-13.2.0"     "SPAdes"; }
-load_flye()     { load_module_capability flye     "Flye/2.9.5-GCC-13.2.0"        "Flye"; }
+load_flye()     { load_module_capability flye     "Flye/2.9.6-GCC-13.2.0"        "Flye"; }
 load_minimap2() { load_module_capability minimap2 "minimap2/2.28-GCCcore-13.2.0" "minimap2"; }
 load_samtools() { load_module_capability samtools "SAMtools/1.21-GCC-13.3.0"     "SAMtools"; }
 load_busco()    { load_module_capability busco    "BUSCO/5.7.1-foss-2023a"       "BUSCO"; }

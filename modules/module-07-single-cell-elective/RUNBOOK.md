@@ -7,9 +7,13 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 ## Prerequisites
 
-- SRA-Toolkit 3.2.0 (`prefetch`, `fasterq-dump`), FastQC 0.11.9, STAR
-  (module version unpinned in `master_scrnaseq_pipeline.sh` — run
-  `module spider STAR` on your cluster first), MultiQC 1.28.
+- SRA-Toolkit, FastQC, STAR, MultiQC — loaded automatically via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh) (pinned to
+  SRA-Toolkit 3.2.0, FastQC 0.11.9, MultiQC 1.28; STAR's pin is an
+  unverified guess, not a tested value, so expect it to fall back to
+  `module avail STAR` discovery on most clusters — see the root
+  [`RUNBOOK.md`](../../RUNBOOK.md) §4, and set `STAR_MODULE=<exact-name>`
+  if discovery finds more than one candidate on yours).
 - A 10x cell-barcode whitelist file matching `CHEMISTRY` (`10x_v3` needs a
   16bp-CB/12bp-UMI whitelist — obtainable from Cell Ranger's reference
   bundles or 10x Genomics support). Set `WHITELIST_PATH` before running.

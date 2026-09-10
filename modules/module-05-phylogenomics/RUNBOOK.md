@@ -9,9 +9,15 @@ module's [`README.md`](README.md). For the full curriculum context, see
 
 - Module 4 completed — this module has no wet-lab or variant-calling
   pipeline of its own; it starts from a cohort VCF Module 4 produces.
-- `bcftools` on `PATH` — used by Script 1.
-- IQ-TREE2 (tested with the `IQ-TREE/2.3.6-gompi-2024a` module referenced
-  in Script 3) on `PATH` or via `module load` — used by Script 3.
+- `bcftools` on `PATH` — used by Script 1 (plain shell, checks via
+  `command -v`; if missing, load it via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh)'s `load_bcftools`
+  in your shell first).
+- IQ-TREE2 — Script 3 loads it automatically via
+  [`scripts/load_modules.sh`](scripts/load_modules.sh) (pinned to
+  `IQ-TREE/2.3.6-gompi-2024a`, with an automatic fallback if your cluster
+  doesn't have that exact build — see the root
+  [`RUNBOOK.md`](../../RUNBOOK.md) §4).
 - Python 3, standard library only — Scripts 2, 4, 5, and 6 use no
   third-party packages, deliberately (same choice Module 3 made for its
   graph-parsing scripts), so this module has no dependency chain beyond

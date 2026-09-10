@@ -42,6 +42,8 @@ showing it.
 ```
 pipeline_orchestration/
 `-- scripts/
+    |-- module-01-raw-reads-qc/
+    |   `-- 6_Automated_QC_Pipeline_AllSamples.sh
     |-- module-02-bulk-rnaseq/
     |   `-- master_rnaseq_pipeline_consolidated.sh
     |-- module-04-variant-calling/
